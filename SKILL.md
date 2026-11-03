@@ -1,7 +1,7 @@
 ---
 name: schematize-docker
 metadata:
-  version: 0.2.0
+  version: 0.3.0
 description: >-
   Docker/OCI: Dockerfile multi-stage por digest e não-root, BuildKit, compose dev, SBOM, cosign, scan. Use ao tocar Dockerfile, compose.yaml ou imagem. Gates locais e CI só na promoção.
 ---
@@ -15,7 +15,7 @@ vai para produção — então ela é reproduzível, mínima, não-root, sem seg
 container que a executa começa sem privilégio nenhum**. Um Dockerfile é código de produção: ele
 decide o que roda como root, o que fica gravado em camada para sempre e qual CVE você entrega.
 
-**Versão:** skill `schematize-docker` v0.2.0. Changelog em `CHANGELOG.md`.
+**Versão:** skill `schematize-docker` v0.3.0. Changelog em `CHANGELOG.md`.
 
 ## Precedência e herança (leia antes de divergir)
 
