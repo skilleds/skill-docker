@@ -1,18 +1,24 @@
-# Pipeline de imagem: build multi-arch -> scan (gate) -> push por digest -> assinatura keyless -> verificação.
+# Pipeline de imagem: build -> scan (gate) -> [só em tag] multi-arch -> push por digest -> cosign keyless -> verificação.
+# Piso 27: CI remoto NÃO roda por commit nem por PR. Gatilhos: workflow_dispatch (scan manual, sem push) e tag
+# `hml-*`/`v*` (promoção: publica e assina). O scan por commit é LOCAL (`tools/ci.sh`, `trivy image` na máquina dev).
 # Actions pinadas por SHA (verificados com `gh api` em 2026-10-14); renove por Renovate/Dependabot, não à mão.
 # Ajuste: IMAGE (registro/nome) e a identidade esperada no `cosign verify` (repositório + workflow).
+# Segredo de build por framework (ex.: Ruby/Rails) NÃO mora aqui: veja o exemplo em `references/linguagens.md` (Ruby).
 name: docker
 
 on:
-  pull_request:
+  workflow_dispatch:
   push:
-    branches: [main]
-    tags: ["v*"]
+    tags: ["hml-*", "v*"]
+    # tag não filtra por path; o paths-ignore documenta que docs/changelog não justificam promoção.
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
 
-# Um build por ref; PR cancela o anterior, main/tags nunca cancelam release em andamento.
+# Um build por ref; dispatch cancela o anterior. Release em tag nunca é cortada no meio por outra tag.
 concurrency:
   group: docker-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 # Piso global vazio; cada job declara só o que precisa.
 permissions: {}
@@ -46,9 +52,6 @@ jobs:
           tags: ${{ env.IMAGE }}:scan
           build-args: |
             SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
-          # Segredo de build só pelo BuildKit (não vira camada). Exemplo; remova se a imagem não usa.
-          secrets: |
-            rails_master_key=${{ secrets.RAILS_MASTER_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -64,10 +67,11 @@ jobs:
           ignore-unfixed: true
           vuln-type: os,library
 
-  # 2) Só em main/tags e só com o scan verde: multi-arch, SBOM e provenance, push, assinatura, verificação.
+  # 2) Só em TAG e só com o scan verde: multi-arch, SBOM e provenance, push, assinatura, verificação.
+  #    O ops (nunca a IA nem `docker pull` manual) resolve tag -> digest e verifica o cosign na admissão.
   release:
     needs: scan
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -117,8 +121,6 @@ jobs:
           provenance: mode=max
           build-args: |
             SOURCE_DATE_EPOCH=${{ env.SOURCE_DATE_EPOCH }}
-          secrets: |
-            rails_master_key=${{ secrets.RAILS_MASTER_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -128,7 +130,7 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: cosign sign --yes "${IMAGE}@${DIGEST}"
 
-      # Prova de ponta a ponta: a assinatura existe e veio DESTE workflow, neste repositório, em main/tag.
+      # Prova de ponta a ponta: a assinatura existe e veio DESTE workflow, neste repositório, em tag.
       - name: Cosign verify (identidade esperada)
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
@@ -136,5 +138,5 @@ jobs:
         run: |
           cosign verify \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity-regexp "^https://github.com/${REPO}/\.github/workflows/docker\.yml@refs/(heads/main|tags/v.*)$" \
+            --certificate-identity-regexp "^https://github.com/${REPO}/\.github/workflows/docker\.yml@refs/tags/(hml-|v).*$" \
             "${IMAGE}@${DIGEST}"

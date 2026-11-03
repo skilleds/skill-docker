@@ -80,7 +80,7 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     secrets:
       - db_password
-    # SEM `ports:`. Acesso: `docker compose exec db psql -U app app` (ou adminer no profile tools).
+    # SEM `ports:`. Acesso (dev local; em hml, query nomeada do ops): `docker compose exec db psql -U app app` (ou adminer no profile tools).
     depends_on:
       volume-init:
         condition: service_completed_successfully

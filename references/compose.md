@@ -121,8 +121,8 @@ services:
 - **VETADO: banco/cache publicado em `0.0.0.0`** (o gate reprova `ports:` de Postgres, MySQL,
   Redis, Mongo etc. fora de loopback). Publicar `5432:5432` equivale a `0.0.0.0:5432` e o Docker
   contorna o firewall do host (`runtime.md` seção 6).
-- Acesso humano ao banco:
-  - **`docker compose exec db psql -U app app`** — o caminho padrão, sem publicar porta;
+- Acesso humano ao banco (**dev local**; em hml o acesso é por query nomeada do ops, nunca `exec`/SQL solto):
+  - **`docker compose exec db psql -U app app`** — o caminho padrão em dev local, sem publicar porta;
   - **profile `debug`** com `ports: ["127.0.0.1:5432:5432"]` — loopback, só quando ativado;
   - de outra máquina: túnel SSH, nunca porta aberta.
 - Porta de serviço de aplicação para o host: sempre explícita sobre o IP (`127.0.0.1:8080:8080`)
@@ -260,6 +260,9 @@ services:
   de debug, e o final em hml), `args` (nunca segredo), `secrets` (de build) e `cache_from`.
 - Em hml a imagem vem de `image:` (digest do CI), **não** de `build:` — o que roda em hml é o
   artefato que foi testado, não um build local.
+- **Quem sobe o compose de hml é o ops** (piso 24): `-f compose.hml.yaml`, `up`, `ps`, `logs` e `down`
+  em hml são operações nomeadas do `<projeto>_ops`, nunca `docker` solto de agente nem de humano
+  com SSH improvisado. `exec psql` e `down -v` existem só em **dev local**.
 
 ---
 
@@ -270,7 +273,7 @@ services:
   fixe `name:` no arquivo ou use `-p` (e `COMPOSE_PROJECT_NAME`) para ambientes paralelos.
 - `docker compose down` remove containers e redes; **mantém** volumes nomeados.
 - **`docker compose down -v` DESTRÓI os volumes — o dado.** Em dev é a forma de resetar; **em hml
-  com dado, nunca**. O script de reset pede confirmação explícita, imprime os volumes que serão
+  com dado, nunca** — e só o dev local o executa; em hml não há `down -v` na lista de operações do ops. O script de reset pede confirmação explícita, imprime os volumes que serão
   apagados e recusa rodar se o ambiente é hml (variável de ambiente `AMBIENTE`). Backup antes de
   qualquer operação destrutiva (`schematize-infra -> references/resiliencia.md`).
 - `docker compose down --remove-orphans` limpa serviço removido do arquivo; `docker compose

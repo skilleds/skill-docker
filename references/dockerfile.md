@@ -1,7 +1,7 @@
 # O Dockerfile da casa — a imagem como artefato mínimo, reprodutível e sem segredo
 
 > Parte da skill **schematize-docker**. Este arquivo é o **piso da imagem**: o que o
-> `scripts/check-dockerfile.sh` cobra e o que reprova o merge. Supply chain (assinatura, SBOM, scan,
+> `scripts/check-dockerfile.sh` cobra e o que trava a promoção. Supply chain (assinatura, SBOM, scan,
 > retenção) está em `supply-chain.md`; hardening em runtime, em `runtime.md`; compose, em
 > `compose.md`; empacotamento por linguagem, em `linguagens.md`. Versões e digests: só em
 > `stack-versoes.md`.
@@ -97,9 +97,9 @@ FROM alpine:<tag>@sha256:<digest>
 depois você tem uma imagem reprodutível **e vulnerável**. Pin sem automação é dívida. O par é
 sempre:
 
-1. **Renovate** ou **Dependabot** abrindo PR de atualização de digest (versão e digest juntos), com
-   o CI (build + scan) rodando no PR;
-2. **rebuild periódico** (semanal) da imagem para absorver patch mesmo sem mudança de código
+1. **Renovate** ou **Dependabot** abrindo PR de atualização de digest (versão e digest juntos); o build + scan roda **local**
+   (`tools/ci.sh`) antes do merge e no CI só na promoção (tag/dispatch);
+2. **rebuild periódico** (semanal, disparado pelo ops via `workflow_dispatch`) da imagem para absorver patch mesmo sem mudança de código
    (`supply-chain.md` seção 8).
 
 ```json

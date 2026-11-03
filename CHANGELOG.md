@@ -3,6 +3,16 @@
 Todas as mudanças relevantes deste pacote, no formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 com versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Alterado
+- `assets/ci/github-actions-docker.yml`: sem `pull_request` nem `push` em branch (piso 27); gatilho `workflow_dispatch` + tags `hml-*`/`v*`, `concurrency` com `cancel-in-progress: true`, `paths-ignore`; push, multi-arch e cosign só em tag; scan por commit passa a ser local (`tools/ci.sh`). Identidade do `cosign verify` ajustada para tags. `check-ci-triggers.sh` verde.
+- `RAILS_MASTER_KEY` sai do template genérico e vira exemplo Ruby em `references/linguagens.md`.
+- `compose.md`/`SKILL.md`/`/docker-compose`: `exec psql` e `down -v` só em dev local; compose de hml sobe pelo ops (piso 24).
+- `supply-chain.md`: parágrafo de fronteira (ops resolve tag->digest, verifica cosign, `pull` por digest, nunca `docker save|load`); rebuild semanal disparado pelo ops via `workflow_dispatch`, sem cron no template; "trava o merge" vira "trava a promoção".
+- Description honesta (gates locais, CI só na promoção), ≤190.
+- Bloco herdado dos pisos 22–29 em `SKILL.md` e `assets/CLAUDE.md`.
+
 ## [0.2.0] — 2026-10-14
 Description reduzida para o orçamento de listagem do catálogo; sem mudança de piso.
 

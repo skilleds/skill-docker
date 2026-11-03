@@ -147,7 +147,7 @@ cosign attest --yes --type spdxjson --predicate sbom.spdx.json ghcr.io/org/app@s
 
 ```bash
 cosign verify ghcr.io/org/app@sha256:<digest> \
-  --certificate-identity "https://github.com/<org>/<repo>/.github/workflows/release.yml@refs/heads/main" \
+  --certificate-identity "https://github.com/<org>/<repo>/.github/workflows/release.yml@refs/tags/v1.2.3" \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 ```
 
@@ -175,8 +175,9 @@ A prova de que a recusa funciona (empurrar imagem não assinada e ver o deploy r
 ## 5. Scan de vulnerabilidade — gate que TRAVA
 
 Ferramentas: **Trivy**, **Grype**, **Docker Scout**. Uma basta; duas dão cobertura cruzada (bases de
-dados diferentes). O scan roda **em dois momentos**: no PR (antes do merge) e **agendado** sobre o
-que está em produção (CVE nova aparece depois do deploy).
+dados diferentes). O scan roda **em dois momentos**: **local**, por commit (`tools/ci.sh`, `trivy image`
+na máquina dev) e no CI **só na promoção** (tag `hml-*`/`v*` ou `workflow_dispatch`); sobre o que já está em
+produção (CVE nova aparece depois do deploy), o ops dispara o dispatch periódico.
 
 ```bash
 trivy image --severity HIGH,CRITICAL --exit-code 1 ghcr.io/org/app@sha256:<digest>
@@ -251,8 +252,10 @@ GHCR `actions/delete-package-versions` ou o equivalente da organização
 
 ## 8. Rebuild periódico e rollback
 
-- **Rebuild semanal agendado** (cron do CI) de toda imagem em produção, **mesmo sem mudança de
-  código**: absorve patch da base e do SO (`dockerfile.md` seção 3 — o digest pinado apodrece).
+- **Rebuild semanal** de toda imagem em produção, **mesmo sem mudança de código**: absorve patch da
+  base e do SO (`dockerfile.md` seção 3 — o digest pinado apodrece). Sem `schedule:` no template
+  (piso 27): o **ops dispara** o `workflow_dispatch` (ou cria a tag `hml-*`) no ritmo semanal. Quem
+  insistir em cron no CI escreve `# justificativa: <motivo>` no workflow e exceção em `ci-triggers-allow.txt`.
   O rebuild passa pelo scan e pelo mesmo pipeline de promoção; digest novo, deploy gated normal.
 - **Rollback = redeploy do digest anterior.** Não é rebuild. Rebuildar para "voltar" produz uma
   imagem nova, diferente da que estava ok. Como o deploy referencia digest e a retenção guarda o
@@ -260,6 +263,14 @@ GHCR `actions/delete-package-versions` ou o equivalente da organização
   para a mecânica de rolling/blue-green/canary).
 
 ---
+
+### Fronteira com infra/ops: como a imagem chega à VPS
+
+O registry é o ponto final desta skill. A travessia até o servidor é do `<projeto>_ops`
+(`schematize-infra`, pisos 23 e 24): o ops **resolve a tag (`hml-*`/`v*`) para o digest**, **verifica
+o cosign** (identidade do workflow + issuer) na admissão e faz o **`pull` por digest**. Ninguém
+(humano ou IA) faz `docker pull` manual na VPS, e **`docker save | ssh ... docker load` é vetado**:
+imagem que não passou pelo registry não tem assinatura, SBOM nem digest rastreável.
 
 ## 9. O pipeline de referência
 

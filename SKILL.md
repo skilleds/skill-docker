@@ -3,7 +3,7 @@ name: schematize-docker
 metadata:
   version: 0.2.0
 description: >-
-  Docker/OCI: Dockerfile multi-stage por digest e não-root, BuildKit, compose de dev, SBOM, cosign, scan. Use ao tocar Dockerfile, compose.yaml ou imagem. Traz gates e CI.
+  Docker/OCI: Dockerfile multi-stage por digest e não-root, BuildKit, compose dev, SBOM, cosign, scan. Use ao tocar Dockerfile, compose.yaml ou imagem. Gates locais e CI só na promoção.
 ---
 <!-- cross-skill: isolamento.md, entrega.md, segredos.md, resiliencia.md, iac.md -> schematize-infra -->
 <!-- cross-skill: efeitos-externos.md, ops.md -> schematize-engineering -->
@@ -82,7 +82,7 @@ dela e com que privilégio o container nasce.** Pedido que cruza a fronteira vai
 
 1. **Rode os gates antes de discutir estilo:** `bash scripts/check-dockerfile.sh .` e
    `bash scripts/check-compose.sh .` — `0` passa · `1` reprova · `2` **nada para verificar** (que
-   não é aprovação). `--strict` promove aviso a erro (use no CI de release).
+   não é aprovação). `--strict` promove aviso a erro (use no gate local e no CI de promoção).
 2. **Escreva a imagem** (`references/dockerfile.md`): multi-stage, base por digest, `USER` numérico,
    cache e segredo pelo BuildKit. Parta do exemplo da sua linguagem (`references/linguagens.md`).
 3. **Feche a cadeia de suprimentos** (`references/supply-chain.md`): reprodutível, SBOM + provenance,
@@ -91,6 +91,8 @@ dela e com que privilégio o container nasce.** Pedido que cruza a fronteira vai
    sem `docker.sock`, com limites; rootless/Podman quando couber.
 5. **Compose só para dev/hml** (`references/compose.md`): produção da casa é `<projeto>_ops` sobre
    systemd/container (infra), não compose.
+
+Herda os pisos 22–29 da `schematize-engineering` (git como trava de conclusão, deploy só do git, ops é o gate da IA, sem agents inúteis, relatório 30 min/handoff 6 h, CI remoto só antes do hml, microserviço autônomo, build em dev/hml + higiene).
 
 Mapa de references:
 
@@ -149,10 +151,10 @@ um erro de segurança. Se o `hadolint` estiver instalado, os achados dele entram
     seccomp/AppArmor default, limites de memória/CPU/pids. **Nunca** `--privileged`, nunca
     `/var/run/docker.sock` montado, nunca `--net=host`/`--pid=host`.
 11. **Banco e cache nunca em `0.0.0.0`.** No compose, dado fica na rede interna; acesso humano por
-    `docker compose exec` ou profile de debug preso a `127.0.0.1`. `.env` fora do git
+    `docker compose exec` (só dev local; em hml, query nomeada do ops) ou profile de debug preso a `127.0.0.1`. `.env` fora do git
     (`.env.example` versionado, sem valor).
 12. **Compose é dev/hml, não produção da casa.** Dependência espera `service_healthy`; `depends_on`
-    em lista só espera o processo arrancar. `down -v` destrói dado: nunca em hml com dado.
+    em lista só espera o processo arrancar. `down -v` destrói dado: só dev local. Subir/inspecionar hml é operação do ops (piso 24); a imagem chega por digest com cosign verificado pelo ops, nunca `docker save|load`.
 13. <!-- herdado:engineering/orquestracao:curto -->**Orquestrador não desenvolve; subagent barato executa.** O agent principal só planeja, despacha e revisa; ação onerosa vira micro-tasks para o executor mais barato que resolve: `haiku` (mecânico) / `sonnet` (código; falhou → mesmo subagent corrige, até 2 rodadas) → Codex `gpt-5.6-terra` → Cursor → subagent `opus` (motivo) → `park`; **visual vai direto ao Codex**; **imagem nunca pelo Claude: detectar Codex/Gemini e perguntar ao usuário qual usar (Codex é a sugestão), nunca API de imagem paga**; papéis em `agentes.toml`. No overdev, cada item do checklist vai a um subagent e o principal revisa antes do `- [x]`. **Sem frota ociosa:** idle com pendência volta ao trabalho; dependente de outro agent → mata e enfileira com gatilho; terminou → mata (§9.6). Detalhe: `schematize-engineering` → `references/orquestracao.md` §9.<!-- /herdado -->
 
 ## Mídia

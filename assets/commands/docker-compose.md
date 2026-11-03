@@ -19,5 +19,5 @@ argument-hint: "[compose.yaml ou diretório]"
 4. **Âncoras/merge (`<<: *x`):** o gate lê a forma literal; valide a final com `docker compose config`
    (não cole a saída em lugar público — ela interpola o `.env`).
 5. **Prove:** gate em `--strict` + `docker compose config -q` (sem daemon) + `docker compose up --wait`
-   (com daemon). `down -v` apaga dado: nunca em hml com dado.
+   (com daemon). `down -v` apaga dado: só dev local (hml é do ops).
 6. Orquestração, rede de produção e cofre: `schematize-infra`.

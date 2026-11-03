@@ -14,6 +14,8 @@ A imagem é o artefato que vai para produção; o container nasce **sem privilé
 10. **Banco/cache nunca em `0.0.0.0`**; `.env` fora do git; compose é dev/hml (produção da casa é a `schematize-infra`).
 11. <!-- herdado:engineering/orquestracao:curto -->**Orquestrador não desenvolve; subagent barato executa.** O agent principal só planeja, despacha e revisa; ação onerosa vira micro-tasks para o executor mais barato que resolve: `haiku` (mecânico) / `sonnet` (código; falhou → mesmo subagent corrige, até 2 rodadas) → Codex `gpt-5.6-terra` → Cursor → subagent `opus` (motivo) → `park`; **visual vai direto ao Codex**; **imagem nunca pelo Claude: detectar Codex/Gemini e perguntar ao usuário qual usar (Codex é a sugestão), nunca API de imagem paga**; papéis em `agentes.toml`. No overdev, cada item do checklist vai a um subagent e o principal revisa antes do `- [x]`. **Sem frota ociosa:** idle com pendência volta ao trabalho; dependente de outro agent → mata e enfileira com gatilho; terminou → mata (§9.6). Detalhe: `schematize-engineering` → `references/orquestracao.md` §9.<!-- /herdado -->
 
+Herda os pisos 22–29 da `schematize-engineering` (git como trava de conclusão, deploy só do git, ops é o gate da IA, sem agents inúteis, relatório 30 min/handoff 6 h, CI remoto só antes do hml, microserviço autônomo, build em dev/hml + higiene).
+
 Gates: `bash .claude/skills/schematize-docker/scripts/check-dockerfile.sh .` e
 `bash .claude/skills/schematize-docker/scripts/check-compose.sh .` — waiver rastreável
 `# docker-ok: <motivo>`. Isolamento por serviço, deploy gated e cofre: `schematize-infra`.

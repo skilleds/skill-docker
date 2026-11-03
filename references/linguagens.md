@@ -147,7 +147,10 @@ existe:
   - **`bundle exec bootsnap precompile`** (gems e app) para startup;
   - **`SECRET_KEY_BASE_DUMMY=1 bin/rails assets:precompile`** no build — o dummy é para o Rails
     não exigir `credentials` real durante o build (**a chave real nunca entra na imagem**;
-    `RAILS_MASTER_KEY` vem por `secrets:`/cofre em runtime);
+    `RAILS_MASTER_KEY` vem por `secrets:`/cofre em runtime). Se o build de fato precisar de segredo,
+    acrescente no `build-push-action` do template (`assets/ci/github-actions-docker.yml`) o par
+    `secrets: |` + `rails_master_key=${{ secrets.RAILS_MASTER_KEY }}` e no Dockerfile
+    `RUN --mount=type=secret,id=rails_master_key ...`: o template genérico não leva segredo de framework;
   - **jemalloc** (`LD_PRELOAD=libjemalloc.so.2` ou `MALLOC_ARENA_MAX=2`): reduz fragmentação e
     memória do Ruby de forma mensurável.
 - **Usuário:** `rails` (UID/GID fixo `1000:1000` numérico) com `chown` só em `db`, `log`, `storage`,
