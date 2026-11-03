@@ -3,7 +3,7 @@
 Todas as mudanças relevantes deste pacote, no formato [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 com versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
-## [Não lançado]
+## [0.3.0] — 2026-11-03
 
 ### Alterado
 - `assets/ci/github-actions-docker.yml`: sem `pull_request` nem `push` em branch (piso 27); gatilho `workflow_dispatch` + tags `hml-*`/`v*`, `concurrency` com `cancel-in-progress: true`, `paths-ignore`; push, multi-arch e cosign só em tag; scan por commit passa a ser local (`tools/ci.sh`). Identidade do `cosign verify` ajustada para tags. `check-ci-triggers.sh` verde.
